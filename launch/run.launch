@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+
+<launch>
+    <arg name="robot" default="r2d2"/>
+    <param name="use_gui" value="True"/>
+    
+    <param name="robot" value="$(arg robot)"/>
+    <param name="robot_description" command="$(find xacro)/xacro $(find ecn_mobile_control)/urdf/$(arg robot).urdf"/>
+
+    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"/>
+    
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find ecn_mobile_control)/launch/config.rviz" />
+    
+    <node name="simulator" pkg="ecn_mobile_control" type="sim.py" args="$(arg robot)" respawn="true" output="screen"/>
+</launch>
