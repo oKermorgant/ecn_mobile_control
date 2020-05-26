@@ -9,7 +9,7 @@
     <visual>
       <origin rpy="1.57 0 0" xyz="0 0 0"/>
       <geometry>
-      <mesh filename="package://ecn_mobile_control/control/urdf/files/frame_scaled_right.stl"/>
+      <mesh filename="package://ecn_mobile_control/urdf/files/frame_scaled_right.stl"/>
       </geometry>
 	<material name="framemat0">
       		<color rgba="0.9 0.4 0. 1" />
@@ -18,7 +18,7 @@
      <visual>
       <origin rpy="1.57 0 0" xyz="0 0 0"/>
       <geometry>
-      <mesh filename="package://ecn_mobile_control/control/urdf/files/frame_scaled_left.stl"/>
+      <mesh filename="package://ecn_mobile_control/urdf/files/frame_scaled_left.stl"/>
       </geometry>
         <material name="framemat0">
                 <color rgba="0.9 0.4 0. 1" />
@@ -27,13 +27,13 @@
     <collision>
       <origin rpy="1.57 0 0" xyz="0 0 0"/>
       <geometry>
-       <mesh filename="package://ecn_mobile_control/control/urdf/files/frame_scaled_right.stl"/>
+       <mesh filename="package://ecn_mobile_control/urdf/files/frame_scaled_right.stl"/>
       </geometry>
     </collision>
 <collision>
       <origin rpy="1.57 0 0" xyz="0 0 0"/>
       <geometry>
-       <mesh filename="package://ecn_mobile_control/control/urdf/files/frame_scaled_left.stl"/>
+       <mesh filename="package://ecn_mobile_control/urdf/files/frame_scaled_left.stl"/>
       </geometry>
     </collision>
   </link>
@@ -49,7 +49,7 @@
  <visual>
 <origin rpy=" -1.5089523943366046 0.017064611667450248 -1.57454489647697 " xyz=" -0.03313875198364258 0.0 -0.23958677053451538"/>
 <geometry>
- <mesh filename="package://ecn_mobile_control/control/urdf/files/handlebar_scaled.stl"/>
+ <mesh filename="package://ecn_mobile_control/urdf/files/handlebar_scaled.stl"/>
       </geometry>
         <material name="framemat0">
                 <color rgba="0.9 0.4 0. 1" />
@@ -58,7 +58,7 @@
      <collision>
 <origin rpy=" -1.5089523943366046 0.017064611667450248 -1.57454489647697 " xyz=" -0.03313875198364258 0.0 -0.23958677053451538"/>
       <geometry>
-       <mesh filename="package://ecn_mobile_control/control/urdf/files/handlebar_scaled.stl"/>
+       <mesh filename="package://ecn_mobile_control/urdf/files/handlebar_scaled.stl"/>
       </geometry>
     </collision>
   </link>
@@ -81,7 +81,7 @@
     <visual>
       <origin rpy="1.57 0 0" xyz="0 0 0"/>
       <geometry>
-      <mesh filename="package://ecn_mobile_control/control/urdf/files/wheel_scaled.stl"/>
+      <mesh filename="package://ecn_mobile_control/urdf/files/wheel_scaled.stl"/>
       </geometry>
         <material name="framemat0">
                 <color rgba="0.9 0.4 0. 1" />
@@ -90,7 +90,7 @@
     <collision>
       <origin rpy="1.57 0 0" xyz="0 0 0"/>
       <geometry>
-       <mesh filename="package://ecn_mobile_control/control/urdf/files/wheel_scaled.stl"/>
+       <mesh filename="package://ecn_mobile_control/urdf/files/wheel_scaled.stl"/>
       </geometry>
     </collision>
   </link>
@@ -114,7 +114,7 @@
     <visual>
       <origin rpy="1.57 0 0" xyz="0 0 0"/>
       <geometry>
-      <mesh filename="package://ecn_mobile_control/control/urdf/files/wheel_scaled.stl"/>
+      <mesh filename="package://ecn_mobile_control/urdf/files/wheel_scaled.stl"/>
       </geometry>
         <material name="framemat0">
                 <color rgba="0.9 0.4 0. 1" />
@@ -123,7 +123,7 @@
     <collision>
       <origin rpy="1.57 0 0" xyz="0 0 0"/>
       <geometry>
-       <mesh filename="package://ecn_mobile_control/control/urdf/files/wheel_scaled.stl"/>
+       <mesh filename="package://ecn_mobile_control/urdf/files/wheel_scaled.stl"/>
       </geometry>
     </collision>
   </link>

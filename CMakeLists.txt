@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(ecn_mobile_control)
 
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_BUILD_TYPE Release)
+
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   nav_msgs
@@ -11,8 +15,6 @@ find_package(catkin REQUIRED COMPONENTS
 generate_dynamic_reconfigure_options(
   cfg/Gains.cfg
 )
-
-
 
 catkin_package(
  # INCLUDE_DIRS include
@@ -27,8 +29,6 @@ include_directories(
  include
   ${catkin_INCLUDE_DIRS}
 )
-
-
 
 add_executable(gains_client src/gains_client.cpp)
 target_link_libraries(gains_client ${catkin_LIBRARIES} )

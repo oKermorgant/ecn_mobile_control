@@ -11,7 +11,6 @@ import tf
 import numpy as np
 import sys
 from dynamic_reconfigure.server import Server as DRServer
-from dynamic_reconfigure.client import Client as DRClient
 from ecn_mobile_control.cfg import GainsConfig
 
 
@@ -27,21 +26,21 @@ def toPi(v):
 
 class Traj:
     def __init__(self):
-        self.a = 3
-        self.b = 2
         self.w = .5
 
     def ref(self, t):
+        a = 3
+        b = 2
         c,s = np.cos(self.w*t),np.sin(self.w*t)
         
-        x = (self.a + self.b*c)*c
-        y = (self.a + self.b*c)*s
+        x = (a + b*c)*c
+        y = (a + b*c)*s
         
-        vx = -self.w*(self.a + 2*self.b*c)*s
-        vy = self.w*(self.a*c - 2*self.b*s**2 + self.b)
+        vx = -self.w*(a + 2*b*c)*s
+        vy = self.w*(a*c - 2*b*s**2 + b)
         
-        ax = self.w**2*(-self.a*c + 4*self.b*s**2 - 2*self.b)
-        ay = -self.w**2*(self.a + 4*self.b*c)*s
+        ax = self.w**2*(-a*c + 4*b*s**2 - 2*b)
+        ay = -self.w**2*(a + 4*b*c)*s
         
         return [np.matrix(val).transpose() for val in [[x,y],[vx,vy],[ax,ay]]]
     
@@ -139,7 +138,7 @@ class Robot:
             if self.reach(self.manual_goal):        # reached
                 if self.t0 == 0:
                     self.t0 = t
-                if t - self.t0 > 5.:   # go back to traj after 10 sec
+                if t - self.t0 > 5.:   # go back to traj after 5 sec
                     self.t0 = 0
                     self.manual_goal = None
         else:                 
