@@ -184,4 +184,33 @@
     <child link="box"/>
     <origin xyz="0.1814 0 0.1414"/>
   </joint>
+  
+  <link name="carrot">
+      <visual>
+          <origin rpy="-1.57 0 0"/>
+          <geometry>
+              <mesh filename="package://ecn_mobile_control/urdf/carrot/carrot.dae" scale="0.003 0.003 0.003"/>
+          </geometry>
+      </visual>
+  </link>
+  
+    <joint name="carrot_disable" type="prismatic">
+    <parent link="base_link"/>
+    <child link="carrot_disable"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-100" upper="100" velocity="10" effort="-1"/>
+  </joint>   
+  
+  <joint name="carrot" type="prismatic">
+    <parent link="carrot_disable"/>
+    <child link="carrot"/>
+    <origin xyz="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-100" upper="100" velocity="10" effort="-1"/>
+  </joint>
+  
+  
+  <link name="carrot_disable"/>
+  
+  
 </robot>

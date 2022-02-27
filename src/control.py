@@ -54,7 +54,17 @@ class Robot:
         self.w = 0
         self.bike = bike
         
+        # control gains
+        self.gains = None
+        self.srv = DRServer(GainsConfig, self.gains_cb)
+        self.orient = 1
+        
         rospy.Subscriber('odom', Odometry, self.odom_cb)
+        
+        self.carrot_pub = rospy.Publisher('joint_states', JointState, queue_size=1)
+        self.js = JointState()
+        self.js.name=['carrot', 'carrot_disable']
+        self.js.position=[0, 0]
         
         if bike:
             rospy.Subscriber('joint_states', JointState, self.joint_cb)
@@ -75,26 +85,27 @@ class Robot:
         self.error.data = [0,0,0,0]
         self.error_pub = rospy.Publisher('error', Float32MultiArray, queue_size=10)
         
-        # control gains
-        self.gains = None
-        self.srv = DRServer(GainsConfig, self.gains_cb)
         
     def gains_cb(self, config, level):
         self.gains = dictToNamespace(config)
-        if self.gains.d <= 0:
-            self.gains.d = 0.01
         return config
     
-        
     def odom_cb(self, msg):
         self.xy[0] = msg.pose.pose.position.x
         self.xy[1] = msg.pose.pose.position.y
         self.theta = 2*np.arctan2(msg.pose.pose.orientation.z, msg.pose.pose.orientation.w)
         self.v = msg.twist.twist.linear.x
         self.w = msg.twist.twist.angular.z
+        
+    def carrot(self, d):
+        self.js.header.stamp = rospy.Time.now()
+        self.js.position = d
+        self.carrot_pub.publish(self.js)
             
     def joint_cb(self, msg):
-        self.beta = msg.position[0]
+        if 'frame_to_handlebar' in msg.name:
+            idx = msg.name.index('frame_to_handlebar')
+            self.beta = msg.position[idx]
                 
     def goal_cb(self, msg):
         self.manual_goal = np.matrix([[msg.pose.position.x], [msg.pose.position.y]])
@@ -105,6 +116,8 @@ class Robot:
         s = np.sin(self.theta)
         d = self.gains.d
         
+        self.carrot([d, 0])
+                
         self.error.data = [goal[0,0] - self.xy[0,0], 
                     goal[1,0] - self.xy[1,0],
                     0]
@@ -118,15 +131,15 @@ class Robot:
                            [ stb+d/self.L*ctb*np.sin(self.beta), d*ctb]])
         else:
             xyp = self.xy + d*np.matrix([[c],[s]])
-            K = np.matrix([[c, -d*s],[s, d*c]])
+            K = np.matrix([[c, -d*s],[s, d*c]])            
                 
-        xyd_cmd = self.gains.Kp * (goal - xyp)
+        xyd_cmd = self.gains.Kp * (goal - xyp)        
+        
         if is_defined(xyd):
             xyd_cmd += xyd
-            
         cmd = np.linalg.inv(K) * xyd_cmd
-        self.cmd.linear.x = cmd[0]
-        self.cmd.angular.z = cmd[1]
+        self.cmd.linear.x = cmd[0,0]
+        self.cmd.angular.z = cmd[1,0]
         
         return np.linalg.norm(goal - xyp) < 1e-3  
             
@@ -149,10 +162,11 @@ class Robot:
             theta_goal = np.arctan2(xyd[1], xyd[0])
             self.goal.pose.orientation.z = np.sin(theta_goal/2)
             self.goal.pose.orientation.w = np.cos(theta_goal/2)
-            
-            if not self.gains.lyapunov:
-                self.reach(xy, xyd)
+                        
+            if not self.gains.lyapunov:                
+                self.reach(xy, xyd)                
             else: 
+                self.carrot([0, 99])
                 # Lyapunov
                 c = np.cos(self.theta)
                 s = np.sin(self.theta)
@@ -190,11 +204,13 @@ class Robot:
         self.error.data.append(np.linalg.norm(self.error.data))
         self.error_pub.publish(self.error)           
         
-        
-        
 
 if __name__ == "__main__":
     rospy.init_node('control')
+    
+    rate = rospy.Rate(1.)
+    while not rospy.has_param('robot'):
+        rate.sleep()
     
     robot = Robot(rospy.get_param('robot'))
     traj = Traj()
@@ -202,15 +218,15 @@ if __name__ == "__main__":
     # build path
     path = Path() 
     path.header.frame_id = 'world' 
-    for t in np.linspace(-np.pi/traj.w, np.pi/traj.w, 100/traj.w):
+    for t in np.linspace(-np.pi/traj.w, np.pi/traj.w, int(100/traj.w)):
         pose = PoseStamped()
         pose.pose.orientation.w = 1
         pose.pose.position.x, pose.pose.position.y = traj.ref(t)[0]
         path.poses.append(pose)
     path_pub = rospy.Publisher('path', Path, queue_size=10)
+    
         
-        
-    rate = rospy.Rate(10.)
+    rate = rospy.Rate(20.)
     
 
     while not rospy.is_shutdown():

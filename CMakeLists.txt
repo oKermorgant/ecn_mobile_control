@@ -32,3 +32,4 @@ include_directories(
 
 add_executable(gains_client src/gains_client.cpp)
 target_link_libraries(gains_client ${catkin_LIBRARIES} )
+add_dependencies(gains_client ecn_mobile_control_gencpp)

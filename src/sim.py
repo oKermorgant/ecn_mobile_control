@@ -27,8 +27,8 @@ class Robot:
         self.odom_pub = rospy.Publisher('odom', Odometry, queue_size=10)
         
         if bike:
-            self.vmax = 3.
-            self.bdotmax = 1.
+            self.vmax = 40.
+            self.bdotmax = 10.
             self.bmax = 1.
             self.L = 1.6
             self.r = 0.4
@@ -41,8 +41,8 @@ class Robot:
             self.joint_msg.position = [0,0,0]
     
         else:       
-            self.vmax = 3.
-            self.wmax = 1.5
+            self.vmax = 30.
+            self.wmax = 15.
             
         self.cmd = Twist()
         rospy.Subscriber('cmd', Twist, self.cmd_callback)       
