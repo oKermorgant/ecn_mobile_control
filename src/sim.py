@@ -27,11 +27,11 @@ class Robot:
         self.odom_pub = rospy.Publisher('odom', Odometry, queue_size=10)
         
         if bike:
-            self.vmax = 40.
+            self.vmax = 30.
             self.bdotmax = 10.
-            self.bmax = 1.
-            self.L = 1.6
-            self.r = 0.4
+            self.bmax = 1.5
+            self.L = 1.57
+            self.r = 0.53
             
             self.bdot = 0.
             
@@ -41,8 +41,8 @@ class Robot:
             self.joint_msg.position = [0,0,0]
     
         else:       
-            self.vmax = 30.
-            self.wmax = 15.
+            self.vmax = 3.
+            self.wmax = 1.5
             
         self.cmd = Twist()
         rospy.Subscriber('cmd', Twist, self.cmd_callback)       
@@ -63,20 +63,19 @@ class Robot:
             self.odom.twist.twist.angular.z = self.odom.twist.twist.linear.x*np.sin(beta)/self.L
             
             # steering update
-            self.joint_msg.position[0] = bound(beta + self.bdot*dt, -self.bmax, self.bmax)
-            
-            
-            for i in [1,2]:
-                self.joint_msg.position[i] += self.odom.twist.twist.linear.x*dt/self.r
-                #self.joint_msg.position[i] = self.joint_msg.position[i] % 2*np.pi
+            # wheel orientation
+            self.joint_msg.position[0] = bound(beta + self.bdot*dt, -self.bmax, self.bmax)            
+            # front wheel
+            self.joint_msg.position[1] += self.odom.twist.twist.linear.x*dt/self.r
+            # back wheel
+            self.joint_msg.position[2] += self.odom.twist.twist.linear.x*np.cos(beta)*dt/self.r
                 
             self.joint_msg.header.stamp = rospy.Time.now()
             self.joint_pub.publish(self.joint_msg)
         else:
             self.odom.pose.pose.position.x += self.odom.twist.twist.linear.x*np.cos(theta)*dt
             self.odom.pose.pose.position.y += self.odom.twist.twist.linear.x*np.sin(theta)*dt
-            
-        
+                    
         theta += self.odom.twist.twist.angular.z * dt
         self.odom.pose.pose.orientation.z = np.sin(theta/2)
         self.odom.pose.pose.orientation.w = np.cos(theta/2)
@@ -105,7 +104,7 @@ class Robot:
 
 if __name__ == "__main__":
     
-    rospy.init_node('sim')   
+    rospy.init_node('sim')
     
     bike = sys.argv[1] == 'bike'
     

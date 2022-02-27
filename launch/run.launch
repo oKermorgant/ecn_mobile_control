@@ -11,7 +11,8 @@
     
     <node name="rviz" pkg="rviz" type="rviz" args="-d $(find ecn_mobile_control)/launch/config.rviz" />
     
-    <node name="simulator" pkg="ecn_mobile_control" type="sim.py" args="$(arg robot)" respawn="true" output="screen"/>
+    <!--node name="control" pkg="ecn_mobile_control" type="control" respawn="true" output="screen">
+        <param name="robot" value="$(arg robot)"/>
+    </node-->
     
-    <node name="control" pkg="ecn_mobile_control" type="control.py" output="screen"/>
 </launch>

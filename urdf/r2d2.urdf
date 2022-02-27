@@ -195,7 +195,7 @@
   </link>
   
     <joint name="carrot_disable" type="prismatic">
-    <parent link="base_link"/>
+    <parent link="footprint"/>
     <child link="carrot_disable"/>
     <axis xyz="0 0 1"/>
     <limit lower="-100" upper="100" velocity="10" effort="-1"/>

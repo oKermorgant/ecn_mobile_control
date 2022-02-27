@@ -42,17 +42,17 @@ class Traj:
         ax = self.w**2*(-a*c + 4*b*s**2 - 2*b)
         ay = -self.w**2*(a + 4*b*c)*s
         
-        return [np.matrix(val).transpose() for val in [[x,y],[vx,vy],[ax,ay]]]
+        return [np.matrix(val).T for val in [[x,y],[vx,vy],[ax,ay]]]
     
 
 class Robot:
-    def __init__(self, bike = True):
+    def __init__(self, bike):
  
         self.xy = np.matrix([[0.],[0.]])
         self.theta = 0
         self.v = 0
         self.w = 0
-        self.bike = bike
+        self.bike = bike == True
         
         # control gains
         self.gains = None
@@ -69,7 +69,7 @@ class Robot:
         if bike:
             rospy.Subscriber('joint_states', JointState, self.joint_cb)
             self.beta = 0.
-            self.L = 1.6
+            self.L = 1.57
             
         self.goal = PoseStamped()
         self.goal.header.frame_id = 'world'
@@ -111,7 +111,7 @@ class Robot:
         self.manual_goal = np.matrix([[msg.pose.position.x], [msg.pose.position.y]])
         self.goal = msg
         
-    def reach(self, goal, xyd = None):
+    def reach(self, goal, xyd = np.matrix([[0,0]]).T):
         c = np.cos(self.theta)
         s = np.sin(self.theta)
         d = self.gains.d
@@ -125,21 +125,21 @@ class Robot:
         if self.bike:
             ctb = np.cos(self.theta+self.beta)
             stb = np.sin(self.theta + self.beta)
+            sb = np.sin(self.beta)
             xyp = self.xy + self.L*np.matrix([[c],[s]]) + d*np.matrix([[ctb],[stb]])
 
-            K = np.matrix([[ctb-d/self.L*stb*np.sin(self.beta), -d*stb],
-                           [ stb+d/self.L*ctb*np.sin(self.beta), d*ctb]])
+            K = np.matrix([[ctb-d/self.L*stb*sb, -d*stb],
+                           [stb+d/self.L*ctb*sb, d*ctb]])
         else:
             xyp = self.xy + d*np.matrix([[c],[s]])
-            K = np.matrix([[c, -d*s],[s, d*c]])            
+            K = np.matrix([[c, -d*s],[s, d*c]])     
+                                    
+        xyd_cmd = self.gains.Kp*(goal-xyp) + xyd
                 
-        xyd_cmd = self.gains.Kp * (goal - xyp)        
-        
-        if is_defined(xyd):
-            xyd_cmd += xyd
         cmd = np.linalg.inv(K) * xyd_cmd
+        
         self.cmd.linear.x = cmd[0,0]
-        self.cmd.angular.z = cmd[1,0]
+        self.cmd.angular.z = cmd[1,0]   # beta dot in case of bike
         
         return np.linalg.norm(goal - xyp) < 1e-3  
             
@@ -188,7 +188,7 @@ class Robot:
                                xy[1,0] - self.xy[1,0],
                                toPi(theta_goal - self.theta)]
 
-                xy_err = xy - self.xy # - L*np.matrix([[c],[s]])
+                xy_err = xy - self.xy #- L*np.matrix([[c],[s]])
                 xe = (np.matrix([[c,s]]) * xy_err)[0,0]
                 ye = (np.matrix([[-s,c]]) * xy_err)[0,0]
                 te = toPi(theta_goal - self.theta - beta)
@@ -199,7 +199,7 @@ class Robot:
                 if self.bike:
                     self.cmd.angular.z -= self.cmd.linear.x/L*np.sin(beta)
                 
-        self.cmd_pub.publish(self.cmd)        
+        self.cmd_pub.publish(self.cmd)   
         self.goal_pub.publish(self.goal)
         self.error.data.append(np.linalg.norm(self.error.data))
         self.error_pub.publish(self.error)           
