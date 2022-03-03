@@ -7,7 +7,7 @@
 
 #include "traj.h"
 
-using ecn_mobile_control::GainsConfig;
+using namespace ecn_mobile_control;
 using sensor_msgs::JointState;
 
 inline double sinc(double x)
@@ -18,7 +18,9 @@ inline double sinc(double x)
 
 inline double toPi(double t)
 {
-  return fmod(t+M_PI, 2*M_PI) - M_PI;
+  if(t > M_PI)  return toPi(t-2*M_PI);
+  if(t < -M_PI) return toPi(t+2*M_PI);
+  return t;
 }
 
 class Robot
@@ -34,11 +36,9 @@ protected:
   bool manual_goal_used{false};
   ros::Publisher goal_pub;
 
-
-  vpColVector xy, u;
+  vpColVector xy, u, v;
   vpMatrix K;
-  double theta{0};
-  double vx{0}, vy{0}, w{0};
+  double theta{0}, w{0};
 
   double dt{0.05};
 
@@ -47,44 +47,41 @@ protected:
 
   tf2_ros::TransformBroadcaster br;
 
-  std::tuple<vpColVector, vpColVector, vpColVector> currentGoal(vpColVector xyp, const ros::Time &now)
+  std::tuple<vpColVector, vpColVector, vpColVector> currentGoal(const ros::Time &now)
   {
-    auto [p,v,a] = traj.ref(now.toSec()); {}
+    auto [pd,vd,ad] = traj.ref(now.toSec()); {}
 
     goal.header.stamp = now;
     goal.header.frame_id = "world";
-    goal.pose.position.x = p[0];
-    goal.pose.position.y = p[1];
-    const auto theta_d{atan2(v[1], v[0])};
+    goal.pose.position.x = pd[0];
+    goal.pose.position.y = pd[1];
+    const auto theta_d{atan2(vd[1], vd[0])};
     goal.pose.orientation.w = cos(theta_d/2);
     goal.pose.orientation.z = sin(theta_d/2);
 
-    static double t0{-1};
-    if(!manual_goal_used || gains.lyapunov)
+    static double t0{-1};     
+    
+    if(!manual_goal_used)
     {
       t0 = -1;
       goal_pub.publish(goal);
-      return {p,v,a};
+      return {pd,vd,ad};
     }
 
-    const auto dx{xyp[0]-manual_goal.pose.position.x};
-    const auto dy{xyp[1]-manual_goal.pose.position.y};
-
-    if(sqrt(dx*dx+dy*dy) < 1e-3)
+    if(v.frobeniusNorm() < 1e-3)
     {
       if(t0 < 0) t0 = now.toSec();
       if((now.toSec()-t0) > 5)
       {
         manual_goal_used = false;
         goal_pub.publish(goal);
-        return {p,v,a};
+        return {pd,vd,ad};
       }
     }
-
-    p[0] = manual_goal.pose.position.x;
-    p[1] = manual_goal.pose.position.y;
-    v = 0;
-    return {p,v,a};
+    pd[0] = manual_goal.pose.position.x;
+    pd[1] = manual_goal.pose.position.y;
+    vd = 0;
+    return {pd,vd,ad};
   }
 
 public:
@@ -92,18 +89,23 @@ public:
   {
     js.name = {"carrot", "carrot_disable"};
     js.position = {0, 0};
-    dr_server.setCallback([&](const GainsConfig &config, int){this->gains = config;});
+    dr_server.setCallback([&](const GainsConfig &config, int)
+    {
+      gains = config;
+      if(std::abs(gains.d) < 1e-3)  gains.d = 1e-3;
+    });
 
     goal_sub = nh.subscribe<geometry_msgs::PoseStamped>("/move_base_simple/goal", 1, [&](geometry_msgs::PoseStampedConstPtr goal)
     {
-      manual_goal = *goal;
-      manual_goal_used = true;
-      goal_pub.publish(goal);
-    });
+       manual_goal = *goal;
+       manual_goal_used = true;
+       goal_pub.publish(goal);
+  });
 
     goal_pub = nh.advertise<geometry_msgs::PoseStamped>("goal",1);
 
     xy.resize(2);
+    v.resize(2);
     K.resize(2, 2);
     u.resize(2);
   }
@@ -114,7 +116,7 @@ public:
     const auto c{cos(theta)};
     const auto s{sin(theta)};
     auto vref{c*v[0] + s*v[1]};
-    double wref{};
+    double wref{0.};
     if(std::abs(vref) > 1e-3)
       wref = (v[0]*a[1] - v[1]*a[0])/(vref*vref);
 
@@ -146,14 +148,14 @@ protected:
   }
 
   void publish(const ros::Time &now)
-  {    
-    xy[0] += vx*dt;
-    xy[1] += vy*dt;
+  {
+    xy[0] += v[0]*dt;
+    xy[1] += v[1]*dt;
     theta += w*dt;
     publishTF(now);
 
     js.header.stamp = ros::Time::now();
-    if(gains.lyapunov)
+    if(gains.control != Gains_FirstOrder)
     {
       js.position[1] = 99;
     }
@@ -179,32 +181,51 @@ public:
   {
     const auto c{cos(theta)};
     const auto s{sin(theta)};
-    vpColVector xyp = xy;
-    xyp[0] += c*gains.d;
-    xyp[1] += s*gains.d;
-    const auto [p,v,a] = currentGoal(xyp, now); {}
+
+    const auto [pd,vd,ad] = currentGoal(now); {}
 
     // compute command
-    if(gains.lyapunov)
+    if(gains.control == Gains_Lyapunov)
     {
-      const auto [xe, ye, te, vref, wref] = LyapunovError(p, v, a); {}
+      const auto [xe, ye, te, vref, wref] = LyapunovError(pd, vd, ad); {}
 
       u[0] = vref*cos(te) + gains.Kx*xe;
       u[1] = wref + gains.Ky*ye*vref*sinc(te) + gains.Kt*te;
     }
-    else
+    else if(gains.control == Gains_SecondOrder)
     {
+      K[0][0] = c;
+      K[0][1] = -v[1];
+      K[1][0] = s;
+      K[1][1] = v[0];
+
+      // acceleration command
+      const auto u_tilde{K.pseudoInverse()*(ad + gains.Kp*(pd-xy) + gains.Kv*(vd-v))};
+
+      // to velocity
+      u[0] += u_tilde[0]*dt;
+      u[1] = u_tilde[1];
+    }
+    else  // first order
+    {
+      vpColVector xyp = xy;
+      xyp[0] += c*gains.d;
+      xyp[1] += s*gains.d;
+
       K[0][0] = c;
       K[0][1] = -gains.d*s;
       K[1][0] = s;
       K[1][1] = gains.d*c;
 
-      u = gains.Kp*K.solveBySVD(p-xyp) + v;
+      u = K.solveBySVD(vd + gains.Kp*(pd-xyp));
     }
 
+    u[0] = std::clamp(u[0], -gains.vmax, gains.vmax);
+    u[1] = std::clamp(u[1], -gains.wmax, gains.wmax);
+
     // update position
-    vx = u[0]*c;
-    vy = u[0]*s;
+    v[0] = u[0]*c;
+    v[1] = u[0]*s;
     w = u[1];
 
     publish(now);
@@ -216,7 +237,6 @@ class Bike : public Robot
 {
   double L{1.6};
   double r{0.53};
-  double bdot_max{2.};
   double beta_max{1.5};
 
 public:
@@ -238,39 +258,63 @@ public:
     const auto ctb{cos(theta+beta)};
     const auto stb{sin(theta+beta)};
 
-    vpColVector xyp = xy;
-    xyp[0] += L*c + ctb*gains.d;
-    xyp[1] += L*s + stb*gains.d;
-    const auto [p,v,a] = currentGoal(xyp, now); {}
+    const auto [pd,vd,ad] = currentGoal(now); {}
 
     // compute command
-    if(gains.lyapunov)
+    if(gains.control == Gains_Lyapunov)
     {
-      const auto [xe, ye, te, vref, wref] = LyapunovError(p, v, a, L, beta); {}
+      const auto [xe, ye, te, vref, wref] = LyapunovError(pd, vd, ad, L, beta); {}
       u[0] = vref*cos(te) + gains.Kx*xe;
       u[1] = wref + gains.Ky*ye*vref*sinc(te) + gains.Kt*te - u[0]/L*sb;
     }
+    else if(gains.control == Gains_SecondOrder)
+    {
+      vpColVector xyp = xy;
+      xyp[0] += L*c;
+      xyp[1] += L*s;
+
+      vpColVector vp = v;
+      vp[0] -= u[0]*stb;
+      vp[1] += u[0]*c*sb;
+
+      K[0][0] = ctb;
+      K[0][1] = -u[0]*ctb;
+      K[1][0] = stb;
+      K[1][1] = u[0]*ctb;
+
+      const auto u_tilde{K.pseudoInverse()*(ad + gains.Kp*(pd-xyp) + gains.Kv*(vd-vp))};
+
+      // to velocity
+      u[0] += u_tilde[0]*dt;
+      u[1] = u_tilde[1];
+    }
     else
     {
+      vpColVector xyp = xy;
+      xyp[0] += L*c + ctb*gains.d;
+      xyp[1] += L*s + stb*gains.d;
+
       K[0][0] = ctb-gains.d/L*stb*sb;
       K[0][1] = -gains.d*stb;
       K[1][0] = stb+gains.d/L*ctb*sb;
       K[1][1] = gains.d*ctb;
 
-      u = gains.Kp*K.solveBySVD(p-xyp) + v;
+      u = K.solveBySVD(vd + gains.Kp*(pd-xyp));
     }
 
+    u[0] = std::clamp(u[0], -gains.vmax, gains.vmax);
+
     // update position
-    vx = u[0]*c*cb;
-    vy = u[0]*s*cb;
+    v[0] = u[0]*c*cb;
+    v[1] = u[0]*s*cb;
     w = u[0]*sb/L;
 
     // update wheels
-    u[1] = std::clamp(u[1], -bdot_max, bdot_max);
+    u[1] = std::clamp(u[1], -gains.wmax, gains.wmax);
 
     js.position[2] = std::clamp(js.position[2]+u[1]*dt, -beta_max, beta_max);
     js.position[3] += u[0]*dt/r;
-    js.position[4] += (vx*c + vy*s)*dt/r;
+    js.position[4] += (v[0]*c + v[1]*s)*dt/r;
 
     publish(now);
   }
@@ -281,26 +325,26 @@ public:
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "control");
-  ros::NodeHandle nh;
-  const Traj traj;  
+  ros::NodeHandle nh, priv("~");
+  const Traj traj;
 
   std::unique_ptr<Robot> robot;
-  //if(nh.param<std::string>("~robot", "bike") == "bike")
+  if(priv.param<std::string>("robot", "uni") == "bike")
   {
     ROS_INFO("Using bicycle model");
     robot = std::make_unique<Bike>(nh, traj);
   }
- /* else
+  else
   {
     robot = std::make_unique<Unicycle>(nh, traj);
-  }*/
+  }
 
   auto path_pub = nh.advertise<nav_msgs::Path>("path", 1);
 
   ros::Rate rate(robot->rate());
   while(ros::ok())
   {
-path_pub.publish(traj.fullPath());
+    path_pub.publish(traj.fullPath());
     robot->update(ros::Time::now());
     ros::spinOnce();
     rate.sleep();

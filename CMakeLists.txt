@@ -30,4 +30,4 @@ include_directories(
 
 add_executable(control src/control.cpp)
 target_link_libraries(control ${catkin_LIBRARIES} ${VISP_LIBRARIES})
-add_dependencies(control ecn_mobile_control_gencpp)
+add_dependencies(control ${${PROJECT_NAME}_EXPORTED_TARGETS})

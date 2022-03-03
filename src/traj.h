@@ -39,18 +39,18 @@ struct Traj
     const auto c{cos(w*t)};
     const auto s{sin(w*t)};
 
-    vpColVector p(2), v(2), acc(2);
+    vpColVector pd(2), vd(2), ad(2);
 
-    p[0] = (a+b*c)*c;
-    p[1] = (a+b*c)*s;
+    pd[0] = (a+b*c)*c;
+    pd[1] = (a+b*c)*s;
 
-    v[0] = -w*(a + 2*b*c)*s;
-    v[1] = w*(a*c - 2*b*s*s + b);
+    vd[0] = -w*(a + 2*b*c)*s;
+    vd[1] = w*(a*c - 2*b*s*s + b);
 
-    acc[0] =  w*w*(-a*c + 4*b*s*s - 2*b);
-    acc[1] =  -w*w*(a + 4*b*c)*s;
+    ad[0] =  w*w*(-a*c + 4*b*s*s - 2*b);
+    ad[1] =  -w*w*(a + 4*b*c)*s;
 
-    return {p,v,acc};
+    return {pd,vd,ad};
   }
 };
 

@@ -221,7 +221,7 @@ if __name__ == "__main__":
     for t in np.linspace(-np.pi/traj.w, np.pi/traj.w, int(100/traj.w)):
         pose = PoseStamped()
         pose.pose.orientation.w = 1
-        pose.pose.position.x, pose.pose.position.y = traj.ref(t)[0]
+            
         path.poses.append(pose)
     path_pub = rospy.Publisher('path', Path, queue_size=10)
     
