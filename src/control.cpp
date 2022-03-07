@@ -5,10 +5,15 @@
 
 #include <sensor_msgs/JointState.h>
 
+#include <std_msgs/Float64.h>
+#include <std_msgs/Float64MultiArray.h>
+
 #include "traj.h"
 
 using namespace ecn_mobile_control;
 using sensor_msgs::JointState;
+using std_msgs::Float64;
+using std_msgs::Float64MultiArray;
 
 inline double sinc(double x)
 {
@@ -34,7 +39,7 @@ protected:
   ros::Subscriber goal_sub;
   geometry_msgs::PoseStamped manual_goal, goal;
   bool manual_goal_used{false};
-  ros::Publisher goal_pub;
+  ros::Publisher goal_pub, error_pub, norm_pub;
 
   vpColVector xy, u, v;
   vpMatrix K;
@@ -82,7 +87,7 @@ protected:
     pd[1] = manual_goal.pose.position.y;
     vd = 0;
     return {pd,vd,ad};
-  }
+  }    
 
 public:
   explicit Robot(ros::NodeHandle &nh, const Traj &traj) : nh{nh}, traj{traj}, js_pub{nh.advertise<sensor_msgs::JointState>("joint_states", 1)}
@@ -108,6 +113,10 @@ public:
     v.resize(2);
     K.resize(2, 2);
     u.resize(2);
+
+
+    error_pub = nh.advertise<Float64MultiArray>("error", 1);
+    norm_pub = nh.advertise<std_msgs::Float64>("norm", 1);
   }
 
   std::array<double, 5> LyapunovError(const vpColVector &p, const vpColVector &v, const vpColVector &a,
@@ -147,12 +156,23 @@ protected:
     br.sendTransform(tf);
   }
 
-  void publish(const ros::Time &now)
+  void publish(const vpColVector &pd, const ros::Time &now)
   {
+    // error
+    auto error{pd - xy};
+    Float64MultiArray error_msg;
+    error_msg.data = error.toStdVector();
+    error_pub.publish(error_msg);
+
+    Float64 norm_msg;
+    norm_msg.data = error.frobeniusNorm();
+    norm_pub.publish(norm_msg);
+
+    // update
     xy[0] += v[0]*dt;
     xy[1] += v[1]*dt;
     theta += w*dt;
-    publishTF(now);
+    publishTF(now);    
 
     js.header.stamp = ros::Time::now();
     if(gains.control != Gains_FirstOrder)
@@ -228,7 +248,7 @@ public:
     v[1] = u[0]*s;
     w = u[1];
 
-    publish(now);
+    publish(pd, now);
   }
 };
 
@@ -316,7 +336,7 @@ public:
     js.position[3] += u[0]*dt/r;
     js.position[4] += (v[0]*c + v[1]*s)*dt/r;
 
-    publish(now);
+    publish(pd, now);
   }
 };
 

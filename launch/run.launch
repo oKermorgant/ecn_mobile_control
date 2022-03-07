@@ -15,4 +15,7 @@
         <param name="robot" value="$(arg robot)"/>
     </node>
     
+    <node name="rqt_plot" pkg="rqt_plot" type="rqt_plot" args="/error/data[0] /error/data[1] /norm"/>
+    <node name="rqt" pkg="rqt" type="rqt"/>
+    
 </launch>
