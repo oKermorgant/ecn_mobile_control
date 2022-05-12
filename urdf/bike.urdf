@@ -1,6 +1,6 @@
 <?xml version="0.0" ?>
-<robot name="frame">
-  <link name="frameLink">
+<robot name="bike">
+  <link name="robot/frameLink">
     <inertial>
       <origin rpy="1.57 0 0" xyz="0 0 0"/>
        <mass value="5.0"/>
@@ -9,7 +9,7 @@
     <visual>
       <origin rpy="1.57 0 0" xyz="0 0 0"/>
       <geometry>
-      <mesh filename="package://ecn_mobile_control/urdf/files/frame_scaled_right.stl"/>
+      <mesh filename="package://mobro/urdf/files/frame_scaled_right.stl"/>
       </geometry>
 	<material name="framemat0">
       		<color rgba="0.9 0.4 0. 1" />
@@ -18,7 +18,7 @@
      <visual>
       <origin rpy="1.57 0 0" xyz="0 0 0"/>
       <geometry>
-      <mesh filename="package://ecn_mobile_control/urdf/files/frame_scaled_left.stl"/>
+      <mesh filename="package://mobro/urdf/files/frame_scaled_left.stl"/>
       </geometry>
         <material name="framemat0">
                 <color rgba="0.9 0.4 0. 1" />
@@ -27,19 +27,19 @@
     <collision>
       <origin rpy="1.57 0 0" xyz="0 0 0"/>
       <geometry>
-       <mesh filename="package://ecn_mobile_control/urdf/files/frame_scaled_right.stl"/>
+       <mesh filename="package://mobro/urdf/files/frame_scaled_right.stl"/>
       </geometry>
     </collision>
 <collision>
       <origin rpy="1.57 0 0" xyz="0 0 0"/>
       <geometry>
-       <mesh filename="package://ecn_mobile_control/urdf/files/frame_scaled_left.stl"/>
+       <mesh filename="package://mobro/urdf/files/frame_scaled_left.stl"/>
       </geometry>
     </collision>
   </link>
 
 
- <link name="handlebarLink">
+ <link name="robot/handlebarLink">
     <inertial>
       <origin rpy="0 0 0" xyz="0 0 0"/>
        <mass value=".5"/>
@@ -49,7 +49,7 @@
  <visual>
 <origin rpy=" -1.5089523943366046 0.017064611667450248 -1.57454489647697 " xyz=" -0.03313875198364258 0.0 -0.23958677053451538"/>
 <geometry>
- <mesh filename="package://ecn_mobile_control/urdf/files/handlebar_scaled.stl"/>
+ <mesh filename="package://mobro/urdf/files/handlebar_scaled.stl"/>
       </geometry>
         <material name="framemat0">
                 <color rgba="0.9 0.4 0. 1" />
@@ -58,21 +58,21 @@
      <collision>
 <origin rpy=" -1.5089523943366046 0.017064611667450248 -1.57454489647697 " xyz=" -0.03313875198364258 0.0 -0.23958677053451538"/>
       <geometry>
-       <mesh filename="package://ecn_mobile_control/urdf/files/handlebar_scaled.stl"/>
+       <mesh filename="package://mobro/urdf/files/handlebar_scaled.stl"/>
       </geometry>
     </collision>
   </link>
 
- <joint name="frame_to_handlebar" type="continuous">
+ <joint name="frame_to_handlebar" type="revolute">
     <axis xyz="0 0 1"/>
-    <parent link="frameLink"/>
-    <child link="handlebarLink"/>
+    <parent link="robot/frameLink"/>
+    <child link="robot/handlebarLink"/>
     <origin rpy="0 -0.261799387799149 0" xyz="0.70  0  0.22"/>
-    <limit effort="100" velocity="100"/>
+    <limit effort="100" velocity="100" lower="-1.57" upper="1.57"/>
     <joint_properties damping="0.0" friction="0.0"/>
   </joint>
 
-<link name="frontWheelLink">
+<link name="robot/frontWheelLink">
     <inertial>
       <origin rpy="1.57 0 0" xyz="0 0 0"/>
        <mass value="1.0"/>
@@ -81,7 +81,7 @@
     <visual>
       <origin rpy="1.57 0 0" xyz="0 0 0"/>
       <geometry>
-      <mesh filename="package://ecn_mobile_control/urdf/files/wheel_scaled.stl"/>
+      <mesh filename="package://mobro/urdf/files/wheel_scaled.stl"/>
       </geometry>
         <material name="framemat0">
                 <color rgba="0.9 0.4 0. 1" />
@@ -90,22 +90,22 @@
     <collision>
       <origin rpy="1.57 0 0" xyz="0 0 0"/>
       <geometry>
-       <mesh filename="package://ecn_mobile_control/urdf/files/wheel_scaled.stl"/>
+       <mesh filename="package://mobro/urdf/files/wheel_scaled.stl"/>
       </geometry>
     </collision>
   </link>
 
  <joint name="handlebar_to_frontwheel" type="continuous">
     <axis xyz="0 1 0"/>
-    <parent link="handlebarLink"/>
-    <child link="frontWheelLink"/>
+    <parent link="robot/handlebarLink"/>
+    <child link="robot/frontWheelLink"/>
     <origin rpy="0 0 0" xyz="0.07 0  -0.69"/>
     <limit effort="100" velocity="100"/>
     <joint_properties damping="0.0" friction="0.0"/>
   </joint>
 
 
-<link name="backWheelLink">
+<link name="robot/backWheelLink">
     <inertial>
       <origin rpy="1.57 0 0" xyz="0 0 0"/>
        <mass value="1.0"/>
@@ -114,7 +114,7 @@
     <visual>
       <origin rpy="1.57 0 0" xyz="0 0 0"/>
       <geometry>
-      <mesh filename="package://ecn_mobile_control/urdf/files/wheel_scaled.stl"/>
+      <mesh filename="package://mobro/urdf/files/wheel_scaled.stl"/>
       </geometry>
         <material name="framemat0">
                 <color rgba="0.9 0.4 0. 1" />
@@ -123,53 +123,52 @@
     <collision>
       <origin rpy="1.57 0 0" xyz="0 0 0"/>
       <geometry>
-       <mesh filename="package://ecn_mobile_control/urdf/files/wheel_scaled.stl"/>
+       <mesh filename="package://mobro/urdf/files/wheel_scaled.stl"/>
       </geometry>
     </collision>
   </link>
 
  <joint name="frame_to_backwheel" type="continuous">
     <axis xyz="0 1 0"/>
-    <parent link="frameLink"/>
-    <child link="backWheelLink"/>
+    <parent link="robot/frameLink"/>
+    <child link="robot/backWheelLink"/>
     <origin rpy="0 0 0" xyz="-0.69 0 -0.42"/>
     <limit effort="100" velocity="100"/>
     <joint_properties damping="0.0" friction="0.0"/>
   </joint>
   
-  <link name="footprint"/>
+  <link name="robot/base_footprint"/>
  <joint name="footprint" type="fixed">
-    <child link="frameLink"/>
-    <parent link="footprint"/>
+    <child link="robot/frameLink"/>
+    <parent link="robot/base_footprint"/>
     <origin xyz="0.69 0 0.95"/>
   </joint>
   
-  <link name="carrot_disable"/>
+  <link name="robot/carrot_disable"/>
   
-    <link name="carrot">
+    <link name="robot/carrot">
       <visual>
           <origin rpy="-1.57 0 0"/>
           <geometry>
-              <mesh filename="package://ecn_mobile_control/urdf/carrot/carrot.dae" scale="0.003 0.003 0.003"/>
+              <mesh filename="package://mobro/urdf/carrot/carrot.dae" scale="0.003 0.003 0.003"/>
           </geometry>
       </visual>
   </link>
   
   <joint name="carrot_disable" type="prismatic">
-    <parent link="handlebarLink"/>
-    <child link="carrot_disable"/>
+    <parent link="robot/handlebarLink"/>
+    <child link="robot/carrot_disable"/>
     <origin xyz="0 0 -1.17" rpy="0 0.261799387799149 0"/>
     <axis xyz="0 0 1"/>
     <limit lower="-100" upper="100" velocity="10" effort="-1"/>
   </joint> 
   
     <joint name="carrot" type="prismatic">
-    <parent link="carrot_disable"/>
-    <child link="carrot"/>
+    <parent link="robot/carrot_disable"/>
+    <child link="robot/carrot"/>
     <axis xyz="1 0 0"/>
     <limit lower="-100" upper="100" velocity="10" effort="-1"/>
   </joint> 
 
 
 </robot>
-

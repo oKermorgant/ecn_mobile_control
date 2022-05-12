@@ -1,0 +1,114 @@
+<?xml version="1.0"?>
+<robot name="two_steering" xmlns:xacro="http://www.ros.org/wiki/xacro">
+    
+<xacro:property name="PI" value="3.1415926535897931"/>
+
+<xacro:property name="radius" value=".4"/>
+<xacro:property name="L" value="1."/>
+<xacro:property name="thickness" value="0.02"/>
+   
+<material name="color">
+    <color rgba="1 0 0 1"/>
+</material>
+  
+  <material name="black">
+    <color rgba="0 0 0 1"/>
+  </material>
+  <material name="white">
+    <color rgba="1 1 1 1"/>
+  </material>
+
+  <link name="robot/base_link">
+    <visual>
+      <origin rpy="0 ${PI/2} 0"/>
+      <geometry>
+        <cylinder length="${L}" radius="0.05"/>
+      </geometry>
+      <material name="color"/>
+    </visual>
+  </link>
+  
+  <link name="robot/base_footprint"/>
+  
+  <joint name="footprint" type="fixed">
+      <child link="robot/base_link"/>
+      <parent link="robot/base_footprint"/>
+    <origin xyz="0 0 ${radius}"/>
+   </joint>
+   
+   
+<xacro:macro name="wheel" params="name offset">
+    
+<link name="robot/${name}_wheel">
+    <visual>
+      <geometry>
+        <cylinder length="${thickness}" radius="${radius}"/>
+      </geometry>
+      <material name="black"/>
+    </visual>
+    
+    <visual>
+        <geometry>
+            <box size="${thickness} ${1.9*radius} ${1.1*thickness}"/>
+        </geometry>
+      <material name="white"/>
+    </visual> 
+    <visual>
+        <geometry>
+            <box size="${1.9*radius} ${thickness} ${1.1*thickness}"/>
+        </geometry>
+      <material name="white"/>
+    </visual>             
+</link>
+
+<link name="robot/${name}_wheel_steering"/>
+
+<joint name="${name}_wheel_steering" type="revolute">
+    <parent link="robot/base_link"/>
+    <child link="robot/${name}_wheel_steering"/>
+    <origin xyz="${offset} 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="${-PI/4}" upper="${PI/4}" effort="0" velocity="100"/>
+</joint>
+
+<joint name="${name}_wheel" type="continuous">
+    <parent link="robot/${name}_wheel_steering"/>
+    <child link="robot/${name}_wheel"/>
+    <origin rpy="${-PI/2} 0 0"/>
+    <axis xyz="0 0 1"/>
+</joint>    
+</xacro:macro>
+
+ <xacro:wheel name="front" offset="${L/2}"/>
+ <xacro:wheel name="rear" offset="${-L/2}"/>
+
+
+  <link name="robot/carrot">
+      <visual>
+          <origin rpy="-1.57 0 0"/>
+          <geometry>
+              <mesh filename="package://mobro/urdf/carrot/carrot.dae" scale="0.003 0.003 0.003"/>
+          </geometry>
+      </visual>
+  </link>
+  
+    <joint name="carrot_disable" type="prismatic">
+    <parent link="robot/base_footprint"/>
+    <child link="robot/carrot_disable"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-100" upper="100" velocity="10" effort="-1"/>
+  </joint>   
+  
+  <joint name="carrot" type="prismatic">
+    <parent link="robot/carrot_disable"/>
+    <child link="robot/carrot"/>
+    <origin xyz="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-100" upper="100" velocity="10" effort="-1"/>
+  </joint>
+  
+  
+  <link name="robot/carrot_disable"/>
+  
+  
+</robot>
