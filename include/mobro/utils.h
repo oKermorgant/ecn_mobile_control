@@ -1,9 +1,7 @@
 #ifndef MOBRO_UTILS_H
 #define MOBRO_UTILS_H
 
-//#define USE_CT
-//#define USE_CROCODDYL
-#define USE_GA
+//#define USE_CROCODDYL // otherwise use GA
 
 #include <Eigen/Core>
 #include <chrono>

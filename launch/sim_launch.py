@@ -7,9 +7,9 @@ def generate_launch_description():
     
     sl.declare_arg('robot', default_value='r2d2', description='r2d2 / bike / two_steering')
     
-    sl.include('map_simulator', 'simulation2d_launch.py', 
+    sl.include('map_simulator', 'simulation2d_launch.py',
                launch_arguments={'map': sl.find('mobro', 'void.yaml'),
-                                 'display': False})
+                                 'display': True})
                
     sl.node('rviz2', arguments=['-d', sl.find('mobro', 'config.rviz')])
     

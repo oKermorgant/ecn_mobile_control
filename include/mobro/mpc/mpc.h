@@ -92,7 +92,6 @@ public:
     return compute_impl(max_ms, prob.prepXRef(traj, t0));
   }
 
-
 protected:
 
   MPCProblem<state_dim> prob;

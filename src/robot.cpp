@@ -2,7 +2,7 @@
 #include <urdf/model.h>
 #include <rclcpp/rclcpp.hpp>
 
-std::tuple<Eigen::Vector2d, Eigen::Vector2d, Eigen::Vector2d, bool> Robot::currentGoal(const rclcpp::Time &now)
+Goal Robot::currentGoal(const rclcpp::Time &now)
 {
 
   auto [pd,vd,ad] = traj.ref(now.seconds()); {}
@@ -124,7 +124,6 @@ SetParametersResult Robot::onParameterChange(const std::vector<rclcpp::Parameter
     else if(name == "Lyapunov.Kt") gains.Kt = val;
     else if(name == "mpc.horizon") gains.horizon = val;
     else if(name == "mpc.dt") gains.dt = val;
-    std::cout << "Updating param " << name << std::endl;
   }
   return SetParametersResult().set__successful(true);
 }
@@ -185,6 +184,23 @@ std::array<double, 5> Robot::LyapunovError(const Vector2d &p, const Vector2d &v,
   return {xe, ye, te, vref, wref};
 }
 
+void Robot::update(const rclcpp::Time &now)
+{
+  const auto goal{currentGoal(now)};
+
+  if(gains.control == ControlType::LYAPUNOV)
+    computeLyapunovFB(goal);
+  else if(gains.control == ControlType::DYNAMIC_FB)
+    computeDynamicFB(goal);
+  else if(gains.control == ControlType::MPC)
+    computeMPC(goal, now);
+  else
+    computeStaticFB(goal);
+
+  buildCmd(now);
+  publish(goal.pd, now);
+}
+
 void Robot::publish(const Eigen::Vector2d &pd, const rclcpp::Time &now)
 {
   // error
@@ -231,4 +247,14 @@ std::string Robot::name(rclcpp::Node::SharedPtr node)
     std::cout << " found " << model->getName() << std::endl;
     return model->getName();
   }
+/*
+  system("ros2 run map_simulator spawn --ros-args -r __ns:=/robot -p
+         << " _x:=" << x
+         << " _y:=" << y
+         << " _theta:=" << theta
+         << " _static_tf_odom:=true"
+         << " _force_scanner:=false";
+      system(ss.str().c_str());)
+*/
+
 }

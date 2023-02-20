@@ -1,7 +1,7 @@
 #ifndef MPC_CROC_H
 #define MPC_CROC_H
 
-#include <mobro/mpc.h>
+#include <mobro/mpc/mpc.h>
 #include <crocoddyl/core/fwd.hpp>
 #include <crocoddyl/core/action-base.hpp>
 #include <crocoddyl/core/states/euclidean.hpp>
@@ -36,6 +36,8 @@ template <size_t state_dim>
 class ActionModel : public crocoddyl::ActionModelAbstractTpl<double> {
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+  static constexpr size_t dim{state_dim};
 
   using Base = crocoddyl::ActionModelAbstractTpl<double>;
   typedef crocoddyl::ActionDataAbstractTpl<double> ActionDataAbstract;
@@ -96,24 +98,24 @@ protected:
 };
 
 
-template <size_t state_dim>
-class MPCrocoddyl : public MPC<state_dim>
+template <class RobotActionModel>
+class MPCrocoddyl : public MPC<RobotActionModel::dim>
 {
   static constexpr size_t control_dim{2};
-  using Model = ActionModel<state_dim>;
-  using MPC<state_dim>::prob;
-  boost::shared_ptr<Model> model;
+  using MPC<RobotActionModel::dim>::prob;
+  boost::shared_ptr<RobotActionModel> model;
   std::vector<boost::shared_ptr<crocoddyl::ActionModelAbstract>> runningModels;
   std::vector<Eigen::VectorXd> xs;
   std::vector<Eigen::VectorXd> us;
 
 public:
-  explicit MPCrocoddyl(Model* model) : model{model}
+  explicit MPCrocoddyl(RobotActionModel* model) : model{model}
   {
   }
 
   Vector2d compute_impl(int max_ms, bool horizon_change) override
   {
+    // ensure correct dimension
     if(horizon_change)
     {
       const auto N{prob.size()};
@@ -125,12 +127,15 @@ public:
       us.resize(N, Vector2d::Zero());
 
       runningModels.resize(N);
-      for(auto &m: runningModels)
+      if(!runningModels.front())
+        runningModels.front() = boost::make_shared<RobotActionModel>();
+      for(auto model = runningModels.begin()+1; model != runningModels.end(); ++model)
       {
-        if(!m.get())
-          m = boost::make_shared<Model>();
-      }
+        if(!model->get())
+          *model = runningModels.front();
+       }
     }
+
     return {};
   }
 };

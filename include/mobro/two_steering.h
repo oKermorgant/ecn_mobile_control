@@ -1,6 +1,5 @@
 #include <mobro/robot.h>
 #include <eigen3/Eigen/Core>
-#include <ct/core/Systems>
 #include <mobro/mpc/mpc.h>
 
 
@@ -13,6 +12,14 @@ class TwoSteering : public Robot
   Float32MultiArray cmd;
   //std::shared_ptr<BicycleModel> model{std::make_shared<BicycleModel>(L)};
   //MobileMPC<4> mpc;
+
+  inline std::array<double, 10> CS() const
+  {
+    return {cos(theta),sin(theta),cos(beta1),sin(beta1),cos(beta2),sin(beta2),
+          cos(theta + beta1),sin(theta + beta1),cos(theta + beta2),sin(theta + beta2)};
+  }
+
+
 public:
   explicit TwoSteering(rclcpp::Node::SharedPtr node, const Traj &traj) : Robot(node, traj, 3)
   {
@@ -33,5 +40,32 @@ public:
 
   }
 
-  void update(const rclcpp::Time &now) override;
+  void computeStaticFB(const Goal &goal);
+
+  void buildCmd(const rclcpp::Time &now)
+  {
+    const auto c1{cos(beta1)};
+    const auto c2{cos(beta2)};
+    const auto s1{sin(beta1)};
+    const auto s2{sin(beta2)};
+    u[0] = std::clamp(u[0], -gains.vmax, gains.vmax);
+    u[1] = std::clamp(u[1], -gains.wmax, gains.wmax);
+    u[2] = std::clamp(u[2], -gains.wmax, gains.wmax);
+
+    const auto v2{u[0]*c1/c2};
+
+    // to cmd vel
+    cmd_vel.linear.x = u[0]*c1;
+    cmd_vel.linear.y = v2*s2;
+    cmd_vel.angular.z = (u[0]*s1-v2*s2)/L;
+
+    // to joints
+    cmd.data[0] = u[0];
+    cmd.data[1] = u[1];
+    cmd.data[2] = u[2];
+    cmd_pub->publish(cmd);
+  }
+
+
+
 };

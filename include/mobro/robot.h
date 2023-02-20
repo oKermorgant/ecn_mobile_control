@@ -10,6 +10,7 @@
 
 #include <mobro/traj.h>
 #include <mobro/utils.h>
+#include <Eigen/Dense>
 
 
 using sensor_msgs::msg::JointState;
@@ -52,7 +53,11 @@ struct Gains
   double horizon, dt;
 };
 
-
+struct Goal
+{
+  Vector2d pd,vd,ad;
+  bool use_traj;
+};
 
 
 class Robot
@@ -85,9 +90,15 @@ protected:
   double dt{0.05};
   int dt_ms = dt * 1000 - 2;
 
+  Goal currentGoal(const rclcpp::Time &now);
 
+  // robot-specific
+  virtual void computeStaticFB(const Goal &goal) = 0;
+  virtual void computeDynamicFB(const Goal &goal) {u.setZero();}
+  virtual void computeLyapunovFB(const Goal &goal) {u.setZero();}
+  virtual void computeMPC(const Goal &goal, const rclcpp::Time &now) {u.setZero();}
 
-  std::tuple<Vector2d,Vector2d,Vector2d, bool> currentGoal(const rclcpp::Time &now);
+  virtual void buildCmd(const rclcpp::Time &now) = 0;
 
 public:
   explicit Robot(rclcpp::Node::SharedPtr node, const Traj &traj, size_t dim_u);
@@ -96,7 +107,14 @@ public:
                                       double L=0, double beta=0) const;
 
   inline std::chrono::milliseconds samplingTime() const {return std::chrono::milliseconds{(int)(1000*dt)};}
-  virtual void update(const rclcpp::Time &now) = 0;
+
+
+  void update(const rclcpp::Time &now);
+
+  static inline Eigen::VectorXd solve(const Eigen::MatrixXd &K, const Eigen::VectorXd &v)
+  {
+    return K.colPivHouseholderQr().solve(v);
+  }
 
   static std::string name(rclcpp::Node::SharedPtr node);
 
@@ -108,7 +126,7 @@ protected:
       return {cmd_vel.linear.x, cmd_vel.linear.y};
     const auto c{cos(theta)};
     const auto s{sin(theta)};
-    return {c*cmd_vel.linear.x - s*cmd_vel.linear.y, s*cmd_vel.linear.x + c*cmd_vel.linear.y};
+    return {c*cmd_vel.linear.x + s*cmd_vel.linear.y, s*cmd_vel.linear.x - c*cmd_vel.linear.y};
   }
 
   void publish(const Vector2d &pd, const rclcpp::Time &now);
