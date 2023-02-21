@@ -9,8 +9,6 @@ class Bike : public Robot
   double beta_max{1.5};
   double beta;
   Float32MultiArray cmd;
-  //std::shared_ptr<BicycleModel> model{std::make_shared<BicycleModel>(L)};
-  //MobileMPC<4> mpc;
 
   inline std::array<double, 6> CS() const
   {

@@ -52,20 +52,21 @@ Robot::Robot(rclcpp::Node::SharedPtr node, const Traj &traj, size_t dim_u) :
   carrot.name = {"carrot", "carrot_disable"};
   carrot.position = {0, 0};
 
-  goal_sub = node->create_subscription<PoseStamped>("/move_base_simple/goal", 1, [&](const PoseStamped &goal)
+  goal_sub = node->create_subscription<PoseStamped>("/move_base_simple/goal", 1, [&](PoseStamped::UniquePtr goal)
   {
-    manual_goal = goal;
+    manual_goal = *goal;
     manual_goal_used = true;
-    goal_pub->publish(goal);
+    goal_pub->publish(*goal);
   });
 
   goal_pub = node->create_publisher<PoseStamped>("goal",1);
 
-  odom_sub = node->create_subscription<Odometry>("robot/odom", 1, [&](const Odometry &odom)
+  odom_sub = node->create_subscription<Odometry>("robot/odom", 1, [&](Odometry::UniquePtr odom)
   {
-    xy[0] = odom.pose.pose.position.x;
-    xy[1] = odom.pose.pose.position.y;
-    theta = 2*atan2(odom.pose.pose.orientation.z, odom.pose.pose.orientation.w);
+    const auto &pose{odom->pose.pose};
+    xy[0] = pose.position.x;
+    xy[1] = pose.position.y;
+    theta = 2*atan2(pose.orientation.z, pose.orientation.w);
   });
   cmd_vel_pub = node->create_publisher<Twist>("robot/cmd_vel", 1);
 
