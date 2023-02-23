@@ -1,6 +1,5 @@
 from simple_launch import SimpleLauncher
-from launch.substitutions import Command
-from os import system
+
 
 def generate_launch_description():
     sl = SimpleLauncher()
@@ -9,7 +8,7 @@ def generate_launch_description():
     
     sl.include('map_simulator', 'simulation2d_launch.py',
                launch_arguments={'map': sl.find('mobro', 'void.yaml'),
-                                 'display': True})
+                                 'display': False})
                
     sl.node('rviz2', arguments=['-d', sl.find('mobro', 'config.rviz')])
     

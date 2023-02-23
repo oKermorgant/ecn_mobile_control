@@ -5,9 +5,9 @@
 class Bike : public Robot
 {  
   double L{1.6};
-  double r{0.53};
   double beta_max{1.5};
   double beta;
+  std::string steering_joint;
   Float32MultiArray cmd;
 
   inline std::array<double, 6> CS() const
@@ -16,14 +16,14 @@ class Bike : public Robot
   }
 
 public:
-  explicit Bike(rclcpp::Node::SharedPtr node, const Traj &traj) : Robot(node, traj, 2)
+  explicit Bike(rclcpp::Node::SharedPtr node, const Traj &traj, double L=1.6, const std::string &joint = "frame_to_handlebar") : Robot(node, traj, 2), L{L}, steering_joint{joint}
   {
     js_sub = node->create_subscription<JointState>("robot/joint_states", 2, [&](const JointState::SharedPtr msg)
     {
       size_t i{};
       for(const auto &name: msg->name)
       {
-        if(name == "frame_to_handlebar")
+        if(name == steering_joint)
           beta = msg->position[i];
         i++;
       }

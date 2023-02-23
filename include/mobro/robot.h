@@ -118,6 +118,12 @@ public:
 
   static std::string name(rclcpp::Node::SharedPtr node);
 
+  inline void setVmax(double v, double w)
+  {
+    gains.vmax = v;
+    gains.wmax = w;
+  }
+
 protected:
 
   inline Vector2d linearVelocity(bool relative = true) const

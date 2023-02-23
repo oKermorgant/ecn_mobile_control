@@ -11,14 +11,22 @@ int main(int argc, char** argv)
 {
   rclcpp::init(argc, argv);
   auto node{std::make_shared<rclcpp::Node>("control")};
-  const Traj traj;
+  Traj traj;
 
   const auto name{Robot::name(node)};
 
   std::unique_ptr<Robot> robot;
   if(name == "bike")
   {
-    robot = std::make_unique<Bike>(node, traj);
+    robot = std::make_unique<Bike>(node, traj);    
+  }
+  else if(name == "zoe")
+  {
+    robot = std::make_unique<Bike>(node, traj, 2.588, "steering");
+    traj.a *= 10;
+    traj.b *= 10;
+    traj.w /= 5;
+    robot->setVmax(10, 2);
   }
   else if(name == "two_steering")
   {
